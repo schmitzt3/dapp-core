@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { WalletConnectProvider } from '@elrondnetwork/erdjs';
+import { useDispatch, useSelector } from 'react-redux';
 
+import { loginAction, logoutAction } from '../redux/commonActions';
 import {
   providerSelector,
   proxySelector,
@@ -15,7 +16,6 @@ import {
 } from '../redux/slices';
 
 import { LoginMethodsEnum } from '../types';
-import { loginAction, logoutAction } from '../redux/commonActions';
 interface InitWalletConnectType {
   callbackRoute: string;
   logoutRoute: string;
@@ -36,9 +36,7 @@ export const useInitWalletConnect = ({
   const isLoggedIn = useSelector(isLoggedInSelector);
   const walletConnectBridge = useSelector(walletConnectBridgeSelector);
 
-  const isProviderConnected: boolean = Boolean(
-    provider?.walletConnector?.connected
-  );
+  const isProviderConnected = Boolean(provider?.walletConnector?.connected);
 
   const heartbeat = () => {
     if (!isProviderConnected) {
@@ -64,7 +62,7 @@ export const useInitWalletConnect = ({
     try {
       const address = await provider.getAddress();
       const signature = await provider.getSignature();
-      const hasSignature: boolean = Boolean(signature);
+      const hasSignature = Boolean(signature);
 
       const loginActionData = {
         address: address,

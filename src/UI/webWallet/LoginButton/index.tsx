@@ -5,7 +5,7 @@ import { Props } from './types';
 
 export const WebWalletLoginButton: (props: Props) => JSX.Element = ({
   token,
-  className,
+  className = 'web-wallet-login',
   callbackRoute,
   loginButtonText,
   shouldRenderDefaultCss = true
