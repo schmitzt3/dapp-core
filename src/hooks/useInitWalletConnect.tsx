@@ -1,7 +1,7 @@
-import React from 'react';
-import { WalletConnectProvider } from '@elrondnetwork/erdjs';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginAction, logoutAction } from '../redux/commonActions';
+import { WalletConnectProvider } from '@elrondnetwork/erdjs';
+
 import {
   providerSelector,
   proxySelector,
@@ -13,83 +13,76 @@ import {
   setTokenLoginSignature,
   setWalletConnectLogin
 } from '../redux/slices';
-import { LoginMethodsEnum } from '../types';
 
+import { LoginMethodsEnum } from '../types';
+import { loginAction, logoutAction } from '../redux/commonActions';
 interface InitWalletConnectType {
   callbackRoute: string;
   logoutRoute: string;
 }
 
-export default function useInitWalletConnect({
+export const useInitWalletConnect = ({
   callbackRoute,
   logoutRoute
-}: InitWalletConnectType) {
-  const heartbeatInterval = 15000;
-  const walletConnectBridge = useSelector(walletConnectBridgeSelector);
-  const isLoggedIn = useSelector(isLoggedInSelector);
-  let provider: any = useSelector(providerSelector);
-  const proxy = useSelector(proxySelector);
+}: InitWalletConnectType) => {
   const dispatch = useDispatch();
+  const heartbeatInterval = 15000;
 
-  const [error, setError] = React.useState<string>('');
-  const [walletConnect, setWalletConnect] =
-    React.useState<WalletConnectProvider>();
+  const [error, setError] = useState<string>('');
+  const [walletConnect, setWalletConnect] = useState<WalletConnectProvider>();
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      heartbeat();
-    }, heartbeatInterval);
+  const proxy = useSelector(proxySelector);
+  let provider: any = useSelector(providerSelector);
+  const isLoggedIn = useSelector(isLoggedInSelector);
+  const walletConnectBridge = useSelector(walletConnectBridgeSelector);
 
-    return () => clearInterval(interval);
-  }, [provider]);
-
-  React.useEffect(() => {
-    return () => {
-      if (provider?.walletConnector?.connected) {
-        window.addEventListener('storage', (e) => {
-          if (e.key === 'walletconnect') {
-            handleOnLogout();
-          }
-        });
-      }
-    };
-  });
+  const isProviderConnected: boolean = Boolean(
+    provider?.walletConnector?.connected
+  );
 
   const heartbeat = () => {
-    if (provider?.walletConnector?.connected) {
-      provider
-        .sendCustomMessage({
-          method: 'heartbeat',
-          params: {}
-        })
-        .catch((e: any) => {
-          console.error('Connection lost', e);
-          handleOnLogout();
-        });
+    if (!isProviderConnected) {
+      return;
     }
+
+    const customMessage = {
+      method: 'heartbeat',
+      params: {}
+    };
+
+    provider.sendCustomMessage(customMessage).catch((e: any) => {
+      console.error('Connection lost', e);
+      handleOnLogout();
+    });
   };
 
   const handleOnLogin = async () => {
+    if (!isLoggedIn) {
+      window.location.href = callbackRoute;
+    }
+
     try {
       const address = await provider.getAddress();
-      if (!isLoggedIn) {
-        window.location.href = callbackRoute;
-      }
       const signature = await provider.getSignature();
-      if (signature != null) {
+      const hasSignature: boolean = Boolean(signature);
+
+      const loginActionData = {
+        address: address,
+        loginMethod: LoginMethodsEnum.walletconnect
+      };
+
+      const loginData = {
+        logoutRoute: logoutRoute,
+        loginType: 'walletConnect',
+        callbackRoute: callbackRoute
+      };
+
+      if (hasSignature) {
         dispatch(setTokenLoginSignature(signature));
       }
-      dispatch(
-        setWalletConnectLogin({
-          loginType: 'walletConnect',
-          callbackRoute,
-          logoutRoute
-        })
-      );
 
-      dispatch(
-        loginAction({ address, loginMethod: LoginMethodsEnum.walletconnect })
-      );
+      dispatch(loginAction(loginActionData));
+      dispatch(setWalletConnectLogin(loginData));
     } catch (err) {
       setError('Invalid address');
       console.log(err);
@@ -97,25 +90,59 @@ export default function useInitWalletConnect({
   };
 
   const handleOnLogout = () => {
-    if (isLoggedIn) {
-      history.pushState({}, document.title, logoutRoute);
-    }
     dispatch(logoutAction());
+
+    if (!isLoggedIn) {
+      return;
+    }
+
+    window.location.href = logoutRoute;
   };
 
   const walletConnectInit = () => {
-    const newProvider = new WalletConnectProvider(proxy, walletConnectBridge, {
+    const providerHandlers = {
       onClientLogin: handleOnLogin,
       onClientLogout: handleOnLogout
-    });
+    };
+
+    const newProvider = new WalletConnectProvider(
+      proxy,
+      walletConnectBridge,
+      providerHandlers
+    );
+
     dispatch(setProvider(provider));
     provider = newProvider;
     setWalletConnect(provider);
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      heartbeat();
+    }, heartbeatInterval);
+
+    return () => clearInterval(interval);
+  }, [provider]);
+
+  useEffect(() => {
+    return () => {
+      if (!isProviderConnected) {
+        return;
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'walletconnect') {
+          handleOnLogout();
+        }
+      });
+    };
+  });
+
   return {
     error,
-    walletConnectInit,
-    walletConnect
+    walletConnect,
+    walletConnectInit
   };
-}
+};
+
+export default useInitWalletConnect;

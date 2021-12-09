@@ -1,49 +1,106 @@
 import React from 'react';
 import platform from 'platform';
-import { ReactComponent as Lightning } from './lightning.svg';
+import classNames from 'classnames';
 import { LoginModalPropsType } from './types';
+import { ReactComponent as Lightning } from './lightning.svg';
+import { useWalletConnectLogin } from '../../../services/login/index';
 
-const WalletConnectLoginModal = ({
+export const WalletConnectLoginModal = ({
+  className,
+  logoutRoute = '',
+  callbackRoute = '',
   title = 'Maiar Login',
+  shouldRenderDefaultCss = true,
   lead = 'Scan the QR code using Maiar',
-  qrSvg,
-  loginUri,
-  error
+  ctaLoginText = 'Scan the QR code using Maiar or click the button below to open the App'
 }: LoginModalPropsType) => {
-  const isMobile =
-    platform?.os?.family === 'iOS' || platform?.os?.family === 'Android';
+  const isIosDevice: boolean = platform?.os?.family === 'iOS';
+  const isAndroidDevice: boolean = platform?.os?.family === 'Android';
+  const isMobileDevice: boolean = isIosDevice || isAndroidDevice;
+
+  const {
+    error,
+    qrCodeSvg,
+    uri: loginUri,
+    loading: isQrCodeSvgLoading
+  } = useWalletConnectLogin({
+    logoutRoute: logoutRoute,
+    callbackRoute: callbackRoute
+  });
+
+  const hasLeadingClassName: boolean = Boolean(className);
+
+  const generatedClasses = {
+    root: classNames({
+      [`${className}`]: hasLeadingClassName,
+      'm-auto login-container': shouldRenderDefaultCss
+    }),
+    card: classNames({
+      [`${className}_card`]: hasLeadingClassName,
+      'card my-3 text-center': shouldRenderDefaultCss
+    }),
+    cardBody: classNames({
+      [`${className}_cardBody`]: hasLeadingClassName,
+      'card my-3 text-center': shouldRenderDefaultCss
+    }),
+    qrCodeSvgContainer: classNames({
+      [`${className}_qrCodeSvg-container`]: hasLeadingClassName,
+      'mx-auto mb-3': shouldRenderDefaultCss
+    }),
+    title: classNames({
+      [`${className}_title`]: hasLeadingClassName,
+      'mb-3': shouldRenderDefaultCss
+    }),
+    leadText: classNames({
+      [`${className}_lead-text`]: hasLeadingClassName,
+      'lead mb-0': shouldRenderDefaultCss
+    }),
+    mobileLoginButton: classNames({
+      [`${className}_mobile-login-button`]: hasLeadingClassName,
+      'btn btn-primary px-4 mt-4': shouldRenderDefaultCss
+    }),
+    errorMessage: classNames({
+      [`${className}_error-message`]: hasLeadingClassName,
+      'text-danger d-flex justify-content-center align-items-center': shouldRenderDefaultCss
+    }),
+    lightingIcon: classNames({
+      [`${className}_lighting-icon`]: hasLeadingClassName,
+      'mr-2': shouldRenderDefaultCss
+    })
+  };
+
+  if (isQrCodeSvgLoading) {
+    return <p>Loading...</p>;
+  }
 
   return (
-    <div className='m-auto login-container'>
-      <div className='card my-3 text-center'>
-        <div className='card-body p-4 mx-lg-4'>
+    <div className={generatedClasses.root}>
+      <div className={generatedClasses.card}>
+        <div className={generatedClasses.cardBody}>
           <div
-            className='mx-auto mb-3'
+            className={generatedClasses.qrCodeSvgContainer}
             dangerouslySetInnerHTML={{
-              __html: qrSvg
+              __html: qrCodeSvg
             }}
             style={{
               width: '15rem',
               height: '15rem'
             }}
           />
-          <h4 className='mb-3'>{title}</h4>
-          {isMobile ? (
+          <h4 className={generatedClasses.title}>{title}</h4>
+          {isMobileDevice ? (
             <React.Fragment>
-              <p className='lead mb-0'>
-                Scan the QR code using Maiar or click the button below to open
-                the App
-              </p>
+              <p className={generatedClasses.leadText}>{ctaLoginText}</p>
               <a
                 id='accessWalletBtn'
                 data-testid='accessWalletBtn'
-                className='btn btn-primary px-4 mt-4'
-                href={loginUri}
+                className={generatedClasses.mobileLoginButton}
+                href={loginUri || undefined}
                 rel='noopener noreferrer nofollow'
                 target='_blank'
               >
                 <Lightning
-                  className='mr-2'
+                  className={generatedClasses.cardBody}
                   style={{
                     width: '0.7rem',
                     height: '0.7rem'
@@ -53,14 +110,10 @@ const WalletConnectLoginModal = ({
               </a>
             </React.Fragment>
           ) : (
-            <p className='lead mb-0'>{lead}</p>
+            <p className={generatedClasses.leadText}>{lead}</p>
           )}
           <div>
-            {error && (
-              <p className='text-danger d-flex justify-content-center align-items-center'>
-                {error}
-              </p>
-            )}
+            {error && <p className={generatedClasses.errorMessage}>{error}</p>}
           </div>
         </div>
       </div>
