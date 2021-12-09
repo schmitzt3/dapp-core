@@ -6,8 +6,7 @@ import { loginAction, logoutAction } from '../redux/commonActions';
 import {
   providerSelector,
   proxySelector,
-  walletConnectBridgeSelector,
-  isLoggedInSelector
+  walletConnectBridgeSelector
 } from '../redux/selectors';
 import {
   setProvider,
@@ -33,9 +32,7 @@ export const useInitWalletConnect = ({
 
   const proxy = useSelector(proxySelector);
   let provider: any = useSelector(providerSelector);
-  const isLoggedIn = useSelector(isLoggedInSelector);
   const walletConnectBridge = useSelector(walletConnectBridgeSelector);
-
   const isProviderConnected = Boolean(provider?.walletConnector?.connected);
 
   const heartbeat = () => {
@@ -55,12 +52,9 @@ export const useInitWalletConnect = ({
   };
 
   const handleOnLogin = async () => {
-    if (!isLoggedIn) {
-      window.location.href = callbackRoute;
-    }
-
     try {
       const address = await provider.getAddress();
+
       const signature = await provider.getSignature();
       const hasSignature = Boolean(signature);
 
@@ -89,30 +83,33 @@ export const useInitWalletConnect = ({
 
   const handleOnLogout = () => {
     dispatch(logoutAction());
-
-    if (!isLoggedIn) {
-      return;
-    }
-
     window.location.href = logoutRoute;
   };
 
   const walletConnectInit = () => {
+    if (!walletConnectBridge) {
+      return;
+    }
+
     const providerHandlers = {
       onClientLogin: handleOnLogin,
       onClientLogout: handleOnLogout
     };
 
-    const newProvider = new WalletConnectProvider(
+    provider = new WalletConnectProvider(
       proxy,
       walletConnectBridge,
       providerHandlers
     );
+    provider.init();
 
     dispatch(setProvider(provider));
-    provider = newProvider;
     setWalletConnect(provider);
   };
+
+  useEffect(() => {
+    walletConnectInit();
+  }, [walletConnectBridge]);
 
   useEffect(() => {
     const interval = setInterval(() => {

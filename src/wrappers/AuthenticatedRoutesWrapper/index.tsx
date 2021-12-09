@@ -94,7 +94,6 @@ const AuthenticatedRoutesWrapper = ({
 
   const shouldRedirect =
     isOnAuthenticatedRoute && !isLoggedIn && walletLogin == null;
-
   if (shouldRedirect) {
     window.location.href = unlockRoute;
     return null;

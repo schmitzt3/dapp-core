@@ -1,9 +1,9 @@
-import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { setTokenLogin } from '../../redux/slices';
+import QRCode from 'qrcode';
 import { useDispatch, useSelector } from 'react-redux';
 import useInitWalletConnect from '../../hooks/useInitWalletConnect';
 import { walletConnectDeepLinkSelector } from '../../redux/selectors';
+import { setTokenLogin } from '../../redux/slices';
 
 export const useWalletConnectLogin = ({
   token,
@@ -19,7 +19,7 @@ export const useWalletConnectLogin = ({
   const [wcUri, setWcUri] = useState<string>('');
   const [qrCodeSvg, setQrCodeSvg] = useState<string>('');
 
-  const { error, walletConnectInit, walletConnect } = useInitWalletConnect({
+  const { error, walletConnect } = useInitWalletConnect({
     logoutRoute,
     callbackRoute
   });
@@ -28,12 +28,12 @@ export const useWalletConnectLogin = ({
     walletConnectDeepLinkSelector
   );
 
-  const hasWcUri: boolean = Boolean(wcUri);
-  const isLoadind: boolean = !hasWcUri;
+  const hasWcUri = Boolean(wcUri);
+  const loading = !hasWcUri;
 
   const loginWithWalletConnect = async () => {
     const walletConnectUri: string | undefined = await walletConnect?.login();
-    const hasUri: boolean = Boolean(walletConnectUri);
+    const hasUri = Boolean(walletConnectUri);
 
     if (!hasUri) {
       return;
@@ -63,10 +63,6 @@ export const useWalletConnectLogin = ({
   };
 
   useEffect(() => {
-    walletConnectInit();
-  }, []);
-
-  useEffect(() => {
     generateQRCode();
   }, [wcUri]);
 
@@ -74,24 +70,24 @@ export const useWalletConnectLogin = ({
     loginWithWalletConnect();
   }, [walletConnect, token]);
 
-  const uriDeepLink: string = `${walletConnectDeepLink}?wallet-connect=${encodeURIComponent(
+  const uriDeepLink = `${walletConnectDeepLink}?wallet-connect=${encodeURIComponent(
     wcUri
   )}`;
 
   const uri: string | null = hasWcUri ? uriDeepLink : null;
 
   console.log({
-    uri: uri,
-    error: error,
-    loading: isLoadind,
-    qrCodeSvg: qrCodeSvg
+    uri,
+    error,
+    loading,
+    qrCodeSvg
   });
 
   return {
-    uri: uri,
-    error: error,
-    loading: isLoadind,
-    qrCodeSvg: qrCodeSvg
+    uri,
+    error,
+    loading,
+    qrCodeSvg
   };
 };
 
