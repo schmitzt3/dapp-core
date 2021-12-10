@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { useDispatch, useSelector } from 'react-redux';
 import useInitWalletConnect from '../../hooks/useInitWalletConnect';
-import { walletConnectDeepLinkSelector } from '../../redux/selectors';
+import { walletConnectDeepLinkSelector, providerSelector, walletConnectBridgeSelector} from '../../redux/selectors';
 import { setTokenLogin } from '../../redux/slices';
 
 export const useWalletConnectLogin = ({
@@ -19,7 +19,11 @@ export const useWalletConnectLogin = ({
   const [wcUri, setWcUri] = useState<string>('');
   const [qrCodeSvg, setQrCodeSvg] = useState<string>('');
 
-  const { error, walletConnect } = useInitWalletConnect({
+  const walletConnect: any = useSelector(providerSelector);
+  const walletConnectBridge = useSelector(walletConnectBridgeSelector);
+
+
+  const { error } = useInitWalletConnect({
     logoutRoute,
     callbackRoute
   });
@@ -32,7 +36,23 @@ export const useWalletConnectLogin = ({
   const loading = !hasWcUri;
 
   const loginWithWalletConnect = async () => {
+
+    console.log({
+        walletConnect
+    }, "try perfrom login");
+
+    if(!walletConnectBridge){
+        return;
+    }
+
+
     const walletConnectUri: string | undefined = await walletConnect?.login();
+
+    console.log("uri",{
+        walletConnectUri
+    });
+    
+
     const hasUri = Boolean(walletConnectUri);
 
     if (!hasUri) {
@@ -75,13 +95,6 @@ export const useWalletConnectLogin = ({
   )}`;
 
   const uri: string | null = hasWcUri ? uriDeepLink : null;
-
-  console.log({
-    uri,
-    error,
-    loading,
-    qrCodeSvg
-  });
 
   return {
     uri,

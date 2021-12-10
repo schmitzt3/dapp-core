@@ -26,7 +26,7 @@ export const UnlockRoute: () => JSX.Element = () => {
               loginButtonText={'Web wallet'}
             />
 
-            <WalletConnectLoginModal />
+            <WalletConnectLoginModal callbackRoute="/home" logoutRoute="/unlock"  />
             
           </div>
         </div>

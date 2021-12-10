@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WalletConnectProvider } from '@elrondnetwork/erdjs';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -28,14 +28,25 @@ export const useInitWalletConnect = ({
   const heartbeatInterval = 15000;
 
   const [error, setError] = useState<string>('');
-  const [walletConnect, setWalletConnect] = useState<WalletConnectProvider>();
+  //   const [walletConnect, setWalletConnect] = useState<WalletConnectProvider>();
+
+  const providerRef = useRef<any>();
 
   const proxy = useSelector(proxySelector);
-  let provider: any = useSelector(providerSelector);
+  const provider: any = useSelector(providerSelector);
+  //   const loginMethod = useSelector(loginMethodSelector);
   const walletConnectBridge = useSelector(walletConnectBridgeSelector);
-  const isProviderConnected = Boolean(provider?.walletConnector?.connected);
 
-  const heartbeat = () => {
+  let heartbeatDisconnectInterval: any;
+
+  const heartbeat = async () => {
+    const isProviderConnected = Boolean(
+      providerRef.current?.walletConnector?.connected
+    );
+    // const hasIosPeerMetaDescription = provider.walletConnector?.peerMeta?.description.match(
+    //   /(iPad|iPhone|iPod)/g
+    // );
+
     if (!isProviderConnected) {
       return;
     }
@@ -45,18 +56,32 @@ export const useInitWalletConnect = ({
       params: {}
     };
 
-    provider.sendCustomMessage(customMessage).catch((e: any) => {
-      console.error('Connection lost', e);
+    try {
+      await providerRef.current.sendCustomMessage(customMessage);
+    } catch (error) {
+      console.error('Connection lost', error);
       handleOnLogout();
-    });
+    }
   };
 
   const handleOnLogin = async () => {
+    window.location.href = callbackRoute;
+
+    const provider = providerRef.current;
+
+    console.log('onlogin', {
+      provider
+    });
+
     try {
       const address = await provider.getAddress();
-
       const signature = await provider.getSignature();
       const hasSignature = Boolean(signature);
+
+      console.log('log info', {
+        address,
+        signature
+      });
 
       const loginActionData = {
         address: address,
@@ -70,11 +95,22 @@ export const useInitWalletConnect = ({
       };
 
       if (hasSignature) {
+        dispatch(setWalletConnectLogin(loginData));
         dispatch(setTokenLoginSignature(signature));
+      } else {
+        dispatch(setWalletConnectLogin(loginData));
       }
 
       dispatch(loginAction(loginActionData));
-      dispatch(setWalletConnectLogin(loginData));
+
+      provider.walletConnector.on('heartbeat', () => {
+        clearInterval(heartbeatDisconnectInterval);
+        heartbeatDisconnectInterval = setInterval(() => {
+          console.log('Maiar Wallet Connection Lost');
+          handleOnLogout();
+          clearInterval(heartbeatDisconnectInterval);
+        }, 150000);
+      });
     } catch (err) {
       setError('Invalid address');
       console.log(err);
@@ -86,7 +122,7 @@ export const useInitWalletConnect = ({
     window.location.href = logoutRoute;
   };
 
-  const walletConnectInit = () => {
+  const walletConnectInit = async () => {
     if (!walletConnectBridge) {
       return;
     }
@@ -96,15 +132,25 @@ export const useInitWalletConnect = ({
       onClientLogout: handleOnLogout
     };
 
-    provider = new WalletConnectProvider(
+    const newProvider = new WalletConnectProvider(
       proxy,
       walletConnectBridge,
       providerHandlers
     );
-    provider.init();
 
-    dispatch(setProvider(provider));
-    setWalletConnect(provider);
+    // newProvider.init(); 
+
+    console.log('here', {
+      newProvider,
+      provider
+      //   result,
+    });
+
+    // newProvider;
+
+    providerRef.current = newProvider;
+    dispatch(setProvider(providerRef.current));
+    // setWalletConnect(newProvider);
   };
 
   useEffect(() => {
@@ -112,6 +158,8 @@ export const useInitWalletConnect = ({
   }, [walletConnectBridge]);
 
   useEffect(() => {
+    heartbeat();
+
     const interval = setInterval(() => {
       heartbeat();
     }, heartbeatInterval);
@@ -119,23 +167,9 @@ export const useInitWalletConnect = ({
     return () => clearInterval(interval);
   }, [provider]);
 
-  useEffect(() => {
-    return () => {
-      if (!isProviderConnected) {
-        return;
-      }
-
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'walletconnect') {
-          handleOnLogout();
-        }
-      });
-    };
-  });
-
   return {
     error,
-    walletConnect,
+    walletConnect: providerRef.current,
     walletConnectInit
   };
 };

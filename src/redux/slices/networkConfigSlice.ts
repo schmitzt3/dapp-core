@@ -54,8 +54,11 @@ export const networkConfigSlice = createSlice({
       state: NetworkConfigStateType,
       action: PayloadAction<InitializeNetworkConfigPayloadType>
     ) => {
-      const { walletConnectBridge, walletConnectDeepLink, network } =
-        action.payload;
+      const {
+        walletConnectBridge,
+        walletConnectDeepLink,
+        network
+      } = action.payload;
       const proxy = new ProxyProvider(network.gatewayAddress, {
         timeout: 4000
       });
@@ -78,6 +81,11 @@ export const networkConfigSlice = createSlice({
       state: NetworkConfigStateType,
       action: PayloadAction<IDappProvider>
     ) => {
+      console.trace();
+      console.log("setprovider",{
+          payload: action.payload
+      });
+      
       state.provider = action.payload;
     }
   },
@@ -88,7 +96,10 @@ export const networkConfigSlice = createSlice({
   }
 });
 
-export const { initializeNetworkConfig, setChainID, setProvider } =
-  networkConfigSlice.actions;
+export const {
+  initializeNetworkConfig,
+  setChainID,
+  setProvider
+} = networkConfigSlice.actions;
 
 export default networkConfigSlice.reducer;
