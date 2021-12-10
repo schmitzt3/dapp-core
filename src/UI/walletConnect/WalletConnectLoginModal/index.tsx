@@ -1,9 +1,9 @@
 import React from 'react';
-import platform from 'platform';
 import classNames from 'classnames';
-import { LoginModalPropsType } from './types';
-import { ReactComponent as Lightning } from './lightning.svg';
+import platform from 'platform';
 import { useWalletConnectLogin } from '../../../services/login/index';
+import { ReactComponent as Lightning } from './lightning.svg';
+import { LoginModalPropsType } from './types';
 
 export const WalletConnectLoginModal = ({
   className,
@@ -28,7 +28,7 @@ export const WalletConnectLoginModal = ({
     callbackRoute: callbackRoute
   });
 
-  const hasLeadingClassName: boolean = Boolean(className);
+  const hasLeadingClassName = Boolean(className);
 
   const generatedClasses = {
     root: classNames({
@@ -61,7 +61,8 @@ export const WalletConnectLoginModal = ({
     }),
     errorMessage: classNames({
       [`${className}_error-message`]: hasLeadingClassName,
-      'text-danger d-flex justify-content-center align-items-center': shouldRenderDefaultCss
+      'text-danger d-flex justify-content-center align-items-center':
+        shouldRenderDefaultCss
     }),
     lightingIcon: classNames({
       [`${className}_lighting-icon`]: hasLeadingClassName,

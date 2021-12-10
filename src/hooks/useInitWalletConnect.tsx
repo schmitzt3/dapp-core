@@ -15,6 +15,7 @@ import {
 } from '../redux/slices';
 
 import { LoginMethodsEnum } from '../types';
+import { logout } from '../utils';
 interface InitWalletConnectType {
   callbackRoute: string;
   logoutRoute: string;
@@ -65,24 +66,11 @@ export const useInitWalletConnect = ({
   };
 
   const handleOnLogin = async () => {
-    window.location.href = callbackRoute;
-
     const provider = providerRef.current;
-
-    console.log('onlogin', {
-      provider
-    });
-
     try {
       const address = await provider.getAddress();
       const signature = await provider.getSignature();
       const hasSignature = Boolean(signature);
-
-      console.log('log info', {
-        address,
-        signature
-      });
-
       const loginActionData = {
         address: address,
         loginMethod: LoginMethodsEnum.walletconnect
@@ -111,22 +99,24 @@ export const useInitWalletConnect = ({
           clearInterval(heartbeatDisconnectInterval);
         }, 150000);
       });
+      window.location.href = callbackRoute;
     } catch (err) {
       setError('Invalid address');
-      console.log(err);
+      console.error(err);
     }
   };
 
   const handleOnLogout = () => {
     dispatch(logoutAction());
-    window.location.href = logoutRoute;
+    logout(callbackRoute).then(() => {
+      window.location.href = logoutRoute;
+    });
   };
 
-  const walletConnectInit = async () => {
-    if (!walletConnectBridge) {
+  const walletConnectInit = () => {
+    if (!walletConnectBridge || providerRef?.current?.isInitialized()) {
       return;
     }
-
     const providerHandlers = {
       onClientLogin: handleOnLogin,
       onClientLogout: handleOnLogout
@@ -138,24 +128,16 @@ export const useInitWalletConnect = ({
       providerHandlers
     );
 
-    // newProvider.init(); 
-
-    console.log('here', {
-      newProvider,
-      provider
-      //   result,
-    });
-
-    // newProvider;
-
-    providerRef.current = newProvider;
-    dispatch(setProvider(providerRef.current));
-    // setWalletConnect(newProvider);
+    dispatch(setProvider(newProvider));
   };
 
   useEffect(() => {
     walletConnectInit();
   }, [walletConnectBridge]);
+
+  useEffect(() => {
+    providerRef.current = provider;
+  }, [provider]);
 
   useEffect(() => {
     heartbeat();
