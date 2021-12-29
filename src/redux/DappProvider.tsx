@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 
@@ -23,16 +23,18 @@ export const DappProvider = ({
   children,
   networkConfig
 }: DappProviderPropsType) => (
-  <Provider store={store}>
-    <PersistGate persistor={persistor} loading={null}>
-      <AppInitializer networkConfig={networkConfig}>
-        <ProviderInitializer />
-        <SignTransactions />
-        <TransactionSender />
-        <TransactionsTracker />
-        <NotificationModal />
-        {children}
-      </AppInitializer>
-    </PersistGate>
-  </Provider>
+  <Fragment>
+    <Provider store={store}>
+      <PersistGate persistor={persistor} loading={null}>
+        <AppInitializer networkConfig={networkConfig}>
+          <ProviderInitializer />
+          <SignTransactions />
+          <TransactionSender />
+          <TransactionsTracker />
+          <NotificationModal />
+        </AppInitializer>
+      </PersistGate>
+    </Provider>
+    {children}
+  </Fragment>
 );
