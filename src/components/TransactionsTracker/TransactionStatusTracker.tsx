@@ -83,14 +83,14 @@ export function TransactionStatusTracker({
         pendingTransactions
       );
       for (const {
-        hash,
+        hash,dsad sasasdada dsa
         status,
-        results,
+        results,dsad sad
         invalidTransaction,
         receiver,
         data,
         hasStatusChanged
-      } of serverTransactions) {
+      } of serverTransactions) {SDADA D
         try {
           const isScCall = isContract(receiver, data);
           const retriesForThisHash = retriesRef.current[hash];
